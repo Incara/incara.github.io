@@ -11,7 +11,7 @@ https.createServer(options, function(request, response) {
 
     var filePath = '.' + request.url;
     if (filePath === './') {
-        filePath = './shark-fin.html';
+        filePath = './index.html';
     }
 
     var extname = path.extname(filePath);
