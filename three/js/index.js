@@ -3,14 +3,15 @@ var markerRoot;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+const canvas = document.querySelector("#canvas");
 const renderer = new THREE.WebGLRenderer({
-    antialias : true
+    canvas: canvas,
+    antialias : true,
+    alpha: true
 });
 const ambientLight = new THREE.AmbientLight(0xcccccc, 0.5);
 
 initialize();
-animate();
-requestAnimationFrame(render);
 
 function initialize() {
     scene.add(camera);
@@ -20,16 +21,21 @@ function initialize() {
     renderer.domElement.style.position = 'absolute';
     renderer.domElement.style.top = '0px';
     renderer.domElement.style.left = '0px';
+
+    const canvas = renderer.domElement;
+
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
     document.body.appendChild(renderer.domElement);
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    const canvas = renderer.domElement;
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
     arToolkitSource = new THREEx.ArToolkitSource({
         sourceType : 'webcam',
         displayWidth: width,
-        displayHeight: height
+        displayHeight: height,
+        sourceWidth: width,
+        sourceHeight: height
     });
 
     arToolkitSource.init(function onReady(){
@@ -39,6 +45,7 @@ function initialize() {
     window.addEventListener('resize', function(){
         onResize();
     });
+
     arToolkitContext = new THREEx.ArToolkitContext({
         cameraParametersUrl: 'data/camera_para.dat',
         detectionMode: 'mono'
@@ -67,6 +74,9 @@ function initialize() {
     loadModel(smoothedRoot);
 }
 
+animate();
+requestAnimationFrame(render);
+
 function render() {
     resizeUpdate();
     renderer.render(scene, camera);
@@ -85,9 +95,11 @@ function resizeUpdate() {
 }
 
 function onResize() {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    const canvas = renderer.domElement;
-    camera.aspect = canvas.clientWidth/canvas.clientHeight;
+    resizeUpdate();
+    arToolkitSource.onResizeElement();
+    if(arToolkitContext.arController !== null){
+        arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas)
+    }
 }
 
 function update() {
@@ -100,7 +112,6 @@ function update() {
 function animate() {
     requestAnimationFrame(animate);
     update();
-    render();
 }
 
 function loadModel(smoothedRoot) {
