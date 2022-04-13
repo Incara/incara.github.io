@@ -1,46 +1,40 @@
+var scene;
 var arToolkitSource, arToolkitContext, smoothedControls;
-var markerRoot;
+var markerRoot1;
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
 const canvas = document.querySelector("#canvas");
-const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
+const width = canvas.clientWidth;
+const height = canvas.clientHeight;
+
+var camera = new THREE.PerspectiveCamera(80, 2, 0.1, 50000);
+
+var renderer = new THREE.WebGLRenderer({
     antialias : true,
-    alpha: true
+    alpha: true,
+    canvas: canvas
 });
-const ambientLight = new THREE.AmbientLight(0xcccccc, 0.5);
 
 initialize();
+animate();
 
 function initialize() {
+    scene = new THREE.Scene();
     scene.add(camera);
-    scene.add(ambientLight);
 
     renderer.setClearColor(new THREE.Color('lightgrey'), 0);
+    renderer.setSize(width, height);
     renderer.domElement.style.position = 'absolute';
     renderer.domElement.style.top = '0px';
     renderer.domElement.style.left = '0px';
 
-    const canvas = renderer.domElement;
-
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-
-    document.body.appendChild(renderer.domElement);
-
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
     arToolkitSource = new THREEx.ArToolkitSource({
-        sourceType : 'webcam',
-        displayWidth: width,
-        displayHeight: height,
-        sourceWidth: width,
-        sourceHeight: height
+        sourceType : 'webcam'
     });
 
     arToolkitSource.init(function onReady(){
         onResize();
     });
+    document.body.appendChild(renderer.domElement);
 
     window.addEventListener('resize', function(){
         onResize();
@@ -55,12 +49,12 @@ function initialize() {
         camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
     });
 
-    markerRoot = new THREE.Group();
-    scene.add(markerRoot);
+    markerRoot1 = new THREE.Group();
+    scene.add(markerRoot1);
 
-    new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
+    new THREEx.ArMarkerControls(arToolkitContext, markerRoot1, {
         type : 'pattern',
-        patternUrl : "/resources/patterns/fin.patt",
+        patternUrl : "/resources/patterns/fin.patt"
     });
 
     var smoothedRoot = new THREE.Group();
@@ -74,44 +68,32 @@ function initialize() {
     loadModel(smoothedRoot);
 }
 
-animate();
-requestAnimationFrame(render);
-
-function render() {
-    resizeUpdate();
-    renderer.render(scene, camera);
-    requestAnimationFrame(render);
-}
-
-function resizeUpdate() {
-    const canvas = renderer.domElement;
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    if (width !== canvas.width || height !== canvas.height) {
-        renderer.setSize(width, height, false);
-    }
-    camera.aspect = canvas.clientWidth / canvas.clientHeight;
-    camera.updateProjectionMatrix();
-}
-
 function onResize() {
-    resizeUpdate();
     arToolkitSource.onResizeElement();
-    if(arToolkitContext.arController !== null){
+    arToolkitSource.copyElementSizeTo(renderer.domElement);
+    console.log("height: " + height + " width: " + width);
+    if(arToolkitContext.arController !== null) {
         arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas)
     }
 }
 
-function update() {
-    if(arToolkitSource.ready !== false) {
+function update(){
+    // update artoolkit on every frame
+    if (arToolkitSource.ready !== false) {
         arToolkitContext.update(arToolkitSource.domElement);
     }
-    smoothedControls.update(markerRoot);
+    // additional code for smoothed controls
+    smoothedControls.update(markerRoot1);
+}
+
+function render() {
+    renderer.render(scene, camera);
 }
 
 function animate() {
     requestAnimationFrame(animate);
     update();
+    render();
 }
 
 function loadModel(smoothedRoot) {
